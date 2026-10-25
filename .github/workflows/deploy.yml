@@ -1,0 +1,54 @@
+# workflow tự động build và xuất bản trang web lên github pages
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+# cấp quyền cần thiết cho github pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# hủy các tiến trình build cũ nếu có commit mới
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout mã nguồn
+        uses: actions/checkout@v4
+
+      - name: Cài đặt môi trường Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Cài đặt thư viện dependencies
+        run: npm install
+
+      - name: Build ứng dụng web tĩnh
+        run: npm run build
+
+      - name: Thiết lập môi trường GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Đóng gói thư mục dist tải lên
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist'
+
+      - name: Xuất bản lên GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
